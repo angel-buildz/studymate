@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import TutorChat from './pages/TutorChat';
 import CanvasSync from './pages/CanvasSync';
+import PracticeQuizzes from './pages/PracticeQuizzes';
 import './styles/main.css';
 
 function AppContent() {
@@ -17,6 +18,8 @@ function AppContent() {
         return <TutorChat />;
       case 'tracker':
         return <CanvasSync />;
+      case 'quizzes':
+        return <PracticeQuizzes />;
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />;
     }
