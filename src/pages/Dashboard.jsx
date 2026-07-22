@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   Flame, 
@@ -10,7 +10,13 @@ import {
   Sparkles, 
   FileText, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Play,
+  Pause,
+  RotateCcw,
+  Timer,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 export default function Dashboard({ setCurrentPage }) {
@@ -32,6 +38,53 @@ export default function Dashboard({ setCurrentPage }) {
   const [newTaskDate, setNewTaskDate] = useState('');
   const [showXPAlert, setShowXPAlert] = useState(false);
   const [xpRewardVal, setXpRewardVal] = useState(0);
+
+  // --- Pomodoro States ---
+  const [timeLeft, setTimeLeft] = useState(1500); // 25 minutes
+  const [timerActive, setTimerActive] = useState(false);
+  const [timerMode, setTimerMode] = useState('focus'); // 'focus' | 'break'
+  const [timerCollapsed, setTimerCollapsed] = useState(false);
+
+  useEffect(() => {
+    let interval = null;
+    if (timerActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0) {
+      if (timerMode === 'focus') {
+        // Completed 25 mins focus block: +25 XP
+        triggerXPNotification(25, 'Focus Session Complete! +25 XP 🌟');
+        setTimerMode('break');
+        setTimeLeft(300); // 5 mins break
+      } else {
+        triggerXPNotification(0, 'Break over! Ready to focus? 🧠');
+        setTimerMode('focus');
+        setTimeLeft(1500); // 25 mins focus
+      }
+      setTimerActive(false);
+    }
+    return () => clearInterval(interval);
+  }, [timerActive, timeLeft, timerMode]);
+
+  const handleStartPause = () => {
+    setTimerActive(!timerActive);
+  };
+
+  const handleResetTimer = () => {
+    setTimerActive(false);
+    setTimeLeft(timerMode === 'focus' ? 1500 : 300);
+  };
+
+  const handleFastForward = () => {
+    setTimeLeft(5);
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleCreateAssignment = (e) => {
     e.preventDefault();
@@ -93,6 +146,59 @@ export default function Dashboard({ setCurrentPage }) {
 
       {/* Left Column: Gamification & Mood Check-In */}
       <div className="dashboard-left-col">
+        {/* Pomodoro Timer Card */}
+        <section className="pomodoro-card card">
+          <div className="card-header" onClick={() => setTimerCollapsed(!timerCollapsed)} style={{ cursor: 'pointer' }}>
+            <div className="header-title-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Timer size={20} className={timerActive ? 'active-timer-icon' : ''} />
+              <h3>Study Timer</h3>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className={`timer-mode-badge ${timerMode}`}>
+                {timerMode === 'focus' ? 'Focus Block' : 'Short Break'}
+              </span>
+              <button className="btn-secondary btn-icon collapse-toggle" style={{ border: 'none', padding: 0 }}>
+                {timerCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+              </button>
+            </div>
+          </div>
+
+          {!timerCollapsed && (
+            <div className="timer-content-wrapper animate-fade-in">
+              <div className="timer-display-circle-container">
+                <div className={`timer-ring ${timerMode} ${timerActive ? 'running' : ''}`}>
+                  <div className="timer-time-text">
+                    {formatTime(timeLeft)}
+                  </div>
+                  <div className="timer-sub-text">
+                    {timerActive ? 'Keep studying!' : 'Ready?'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="timer-controls-row">
+                <button className={`btn ${timerActive ? 'btn-secondary' : 'btn-primary'} play-pause-btn`} onClick={handleStartPause}>
+                  {timerActive ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
+                  <span>{timerActive ? 'Pause' : 'Start Focus'}</span>
+                </button>
+                <button className="btn btn-secondary reset-btn" onClick={handleResetTimer} title="Reset Timer">
+                  <RotateCcw size={18} />
+                </button>
+                
+                {/* Developer Fast-Forward Shortcut */}
+                <button 
+                  type="button" 
+                  className="ff-btn" 
+                  onClick={handleFastForward}
+                  title="Testing Shortcut: Fast forward timer to 5 seconds"
+                >
+                  ⚡ Test Sync
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* Gamification Card */}
         <section className="gamification-card card">
           <div className="card-header">
@@ -750,6 +856,141 @@ export default function Dashboard({ setCurrentPage }) {
           .delete-task-btn {
             opacity: 1;
           }
+        }
+
+        /* --- Pomodoro Timer Styling --- */
+        .pomodoro-card {
+          border-color: var(--primary-glow);
+        }
+
+        .active-timer-icon {
+          color: var(--primary);
+          animation: spinTimer 4s infinite linear;
+        }
+
+        @keyframes spinTimer {
+          to { transform: rotate(360deg); }
+        }
+
+        .timer-mode-badge {
+          font-size: 0.75rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 3px 10px;
+          border-radius: var(--radius-full);
+        }
+
+        .timer-mode-badge.focus {
+          background-color: var(--primary-light);
+          color: var(--primary);
+        }
+
+        .timer-mode-badge.break {
+          background-color: var(--accent-green-bg);
+          color: var(--accent-green);
+        }
+
+        .timer-content-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 10px 0;
+        }
+
+        .timer-display-circle-container {
+          margin-bottom: 20px;
+        }
+
+        .timer-ring {
+          width: 160px;
+          height: 160px;
+          border-radius: var(--radius-full);
+          border: 4px solid var(--border-color);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--bg-card-hover);
+          transition: all var(--transition-normal);
+          position: relative;
+        }
+
+        .timer-ring.focus {
+          border-color: var(--primary-glow);
+          box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .timer-ring.focus.running {
+          border-color: var(--primary);
+          box-shadow: 0 0 20px var(--primary-glow);
+          animation: pulseBorder 2s infinite alternate ease-in-out;
+        }
+
+        .timer-ring.break {
+          border-color: rgba(74, 222, 128, 0.2);
+          box-shadow: 0 0 10px rgba(74, 222, 128, 0.1);
+        }
+
+        .timer-ring.break.running {
+          border-color: var(--accent-green);
+          box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+          animation: pulseBorderGreen 2s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseBorder {
+          0% { box-shadow: 0 0 10px var(--primary-glow); }
+          100% { box-shadow: 0 0 25px var(--primary-glow); }
+        }
+
+        @keyframes pulseBorderGreen {
+          0% { box-shadow: 0 0 10px rgba(74, 222, 128, 0.1); }
+          100% { box-shadow: 0 0 25px rgba(74, 222, 128, 0.4); }
+        }
+
+        .timer-time-text {
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 2.5rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          line-height: 1;
+        }
+
+        .timer-sub-text {
+          font-size: 0.75rem;
+          color: var(--text-tertiary);
+          margin-top: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .timer-controls-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          justify-content: center;
+        }
+
+        .play-pause-btn {
+          width: 140px;
+        }
+
+        .ff-btn {
+          font-size: 0.7rem;
+          background: transparent;
+          border: 1px dashed var(--border-color);
+          color: var(--text-tertiary);
+          padding: 4px 8px;
+          border-radius: var(--radius-xs);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .ff-btn:hover {
+          color: var(--primary);
+          border-color: var(--primary);
+          background-color: var(--primary-light);
         }
       `}</style>
     </div>
