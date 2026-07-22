@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import TutorChat from './pages/TutorChat';
 import CanvasSync from './pages/CanvasSync';
 import PracticeQuizzes from './pages/PracticeQuizzes';
+import NoteSummarizer from './pages/NoteSummarizer';
 import './styles/main.css';
 
 function AppContent() {
@@ -20,6 +21,8 @@ function AppContent() {
         return <CanvasSync />;
       case 'quizzes':
         return <PracticeQuizzes />;
+      case 'summarizer':
+        return <NoteSummarizer />;
       default:
         return <Dashboard setCurrentPage={setCurrentPage} />;
     }

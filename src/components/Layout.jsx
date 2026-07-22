@@ -22,7 +22,7 @@ export default function Layout({ children, currentPage, setCurrentPage }) {
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'tutor', label: 'AI Tutor Chat', icon: MessageSquare },
-    { id: 'summarizer', label: 'Note Summarizer', icon: FileText, disabled: true },
+    { id: 'summarizer', label: 'Note Summarizer', icon: FileText, disabled: false },
     { id: 'quizzes', label: 'Practice Quizzes', icon: BookOpen, disabled: false },
     { id: 'tracker', label: 'Canvas Sync', icon: Calendar, disabled: false }
   ];
